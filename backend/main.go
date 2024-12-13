@@ -2,29 +2,39 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-    "github.com/chat-app-go/pkg/websocket"
+
+	"github.com/pirjademl/realtime-chat-go-react/pkg/websocket"
 )
 
-
-
 // websocket endpoint
-func serverWs(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Host)
+func serveWS(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("websocket endpoint hit")
 
-	ws, err := upgrader.Upgrade(w, r, nil)
+	ws, err := websocket.Upgrade(w, r)
+
 	if err != nil {
-		log.Println(err)
+		fmt.Fprintf(w, "%+v\n", err)
 		return
 	}
-	reader(ws)
+	client := &websocket.Client{
+		Conn: ws,
+		Pool: pool,
+	}
+	pool.Register <- client
+	client.Read()
 }
 
-func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "simple server")
+func setupRoutes() {
+	pool := websocket.NewPool()
+	go pool.Start()
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		serveWS(pool, w, r)
 	})
-	http.HandleFunc("/ws", serverWs)
+
+}
+func main() {
+	fmt.Println("Distributed chat App v0.01")
+	setupRoutes()
 	http.ListenAndServe(":8080", nil)
 }
