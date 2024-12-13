@@ -1,27 +1,24 @@
 import { useEffect, useState } from "react";
-import { connect, sendMessage } from "../lib/api/";
-import { Header, ChatHistory } from "./components";
+import { connect } from "../lib/api/";
+import { Header, Footer, ChatHistory } from "./components";
+import { IChat } from "./types";
 
 function App() {
-    const [ChatMessageHistory, setChatHistory] = useState([]);
-    useEffect(() => {
-        connect((msg) => {
-            console.log("new messages");
-            setChatHistory((prevchat) => [...prevchat, msg.data]);
-        });
-    }, []);
+  const [ChatMessageHistory, setChatHistory] = useState<IChat[]>([]);
+  useEffect(() => {
+    connect((msg: { type: number; data: string }) => {
+      const parsedMessage = JSON.parse(msg.data);
+      setChatHistory((prevChat) => [...prevChat, parsedMessage]);
+    });
+  }, []);
 
-    console.log(ChatMessageHistory);
-
-    return (
-        <main className="w-full h-full  ">
-            <Header />
-
-            <div className="flex items-center justify-center h-full">
-                <ChatHistory messages={ChatMessageHistory ?? []} />
-            </div>
-        </main>
-    );
+  return (
+    <div className="w-full   flex flex-col h-full font-nunito ">
+      <Header />
+      <ChatHistory messages={ChatMessageHistory} />
+      <Footer />
+    </div>
+  );
 }
 
 export default App;
